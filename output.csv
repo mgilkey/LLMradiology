@@ -1,0 +1,5 @@
+StudyID,Specimen_1,GS_1,GP_1,#C_1,%Spec_1,HGPIN_1,ASAP_1,ATYP_1,INF_1,ADC_1,Comment_1,Specimen_2,GS_2,GP_2,#C_2,%Spec_2,HGPIN_2,ASAP_2,ATYP_2,INF_2,ADC_2,Comment_2,Specimen_3,GS_3,GP_3,#C_3,%Spec_3,HGPIN_3,ASAP_3,ATYP_3,INF_3,ADC_3,Comment_3,Specimen_4,GS_4,GP_4,#C_4,%Spec_4,HGPIN_4,ASAP_4,ATYP_4,INF_4,ADC_4,Comment_4,Specimen_5,GS_5,GP_5,#C_5,%Spec_5,HGPIN_5,ASAP_5,ATYP_5,INF_5,ADC_5,Comment_5,Specimen_6,GS_6,GP_6,#C_6,%Spec_6,HGPIN_6,ASAP_6,ATYP_6,INF_6,ADC_6,Comment_6
+SP MG 01 0001,Specimen Unknown,No GS,No GP,No #C,unknown,0,0,0,0,0,No comment,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+SP MG 01 0002,Specimen Unknown,No GS,No GP,No #C,unknown,0,0,0,0,0,No comment,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+subject_1,Right Apex Biopsy,,,,,0,1,0,1,0,,Right Medial Biopsy,,,,unknown,0,1,0,1,0,,Right Base Biopsy,,,,,0,0,0,0,0,,Left Apex Biopsy,,,,unknown,0,1,0,1,0,,Left Medial Biopsy,,,,<5%,0,1,0,1,0,,Left Base Biopsy,,,,unknown,0,0,0,0,0,
+SP MG 01 0004,Specimen Unknown,No GS,No GP,No #C,unknown,0,0,0,0,0,No comment,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
