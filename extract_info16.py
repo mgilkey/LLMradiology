@@ -33,13 +33,13 @@ def get_number_of_specimens(report_text):
     Sends a pathology report to the local LLM via Ollama and extracts the number of specimens.
     """
     prompt = f"""
-You are a data scientist tasked with extracting clinical data from a pathology report. Please extract the number of specimens mentioned in the report. Respond with just the number.
+You are a data scientist tasked with extracting clinical data from a pathology report. Please extract the number of biopsy specimens mentioned in the report. These usually have a number or letter that separate each specimen. Respond with just the number.
 
 ### Pathology Report:
 {report_text}
 """
 
-    model_name = "medllama2"
+    model_name = "llama3.2"
 
     try:
         result = subprocess.run(
@@ -64,15 +64,15 @@ You are a data scientist tasked with extracting clinical data from a pathology r
         print(f"Unexpected error: {e}")
         return 0
 
-def extract_info_from_report(report_text, accession_number, number_of_specimens):
+def extract_info_from_report(report_text, accession_number, number_of_specimens, line_number):
     """
     Sends a pathology report to the local LLM via Ollama and extracts structured data for each specimen.
     """
     prompt = f"""
 You are a data scientist tasked with extracting clinical data from a pathology report. The goal is to create a structured clinical dataset in the form of a JSON object. Please extract the following details from the provided pathology report for each of the {number_of_specimens} specimens:
 
-- "study_id": Use the provided accession number "{accession_number}". If no study_id is present, add "subject_<line number from input.csv>".
-- "specimen_name": Specimen type (e.g., "Right Apex Biopsy"). Remove commas and rearrange the words as necessary to get the order to match the example. Ignore specimens from other tissues and diagnostic information.
+- "study_id": Use the provided accession number "{accession_number}". If no study_id is present, add "subject_{line_number}".
+- "specimen_name": Specimen type (e.g., "Right Apex Biopsy"). Remove commas and rearrange the words as necessary to get the order to match the example. Ignore specimens from other tissues and diagnostic information. These usually start with a number or letter. 
 - "gleason_score": Numeric value from 6 to 10. If missing but "gleason_pattern" is present, sum the two patterns. If the specimen is benign, set to "benign".
 - "gleason_pattern": Score between 1-5 or "Grade Group". If benign, set to "benign".
 - "num_cores": Fraction format (e.g., "3/7").
@@ -128,9 +128,9 @@ Ensure the response is a valid JSON object with a "specimens" list, where each e
         print(f"Unexpected error: {e}")
         return None
 
-# Define file paths for input and output CSVs
+# Define file paths for input and output files
 input_csv_path = "input.csv"
-output_csv_path = "output.csv"
+output_txt_path = "output.txt"
 
 try:
     df_input = pd.read_csv(input_csv_path)
@@ -161,7 +161,7 @@ for index, row in df_input.iterrows():
         print(f"⚠️ Warning: No specimens found for report {line_number}.")
         number_of_specimens = 1  # Default to 1 to ensure at least one set of columns is created
 
-    extracted_specimens = extract_info_from_report(report_text, accession_number, number_of_specimens)
+    extracted_specimens = extract_info_from_report(report_text, accession_number, number_of_specimens, line_number)
 
     if extracted_specimens is None:
         print(f"⚠️ Warning: No valid data extracted for report {line_number}.")
@@ -182,42 +182,33 @@ for index, row in df_input.iterrows():
             specimen['gleason_pattern'] = 'benign'
             specimen['comment'] = 'benign'
 
-    extracted_data.append(extracted_specimens)
+    extracted_data.extend(extracted_specimens)
 
-# Flatten extracted data and create dynamic columns for multiple specimens
+# Create a flattened data structure where each specimen is on its own line
 flattened_data = []
-max_specimens = max(len(report) for report in extracted_data)
-columns = ["StudyID"]
+columns = ["StudyID", "Specimen", "GS", "GP", "#C", "%Spec", "HGPIN", "ASAP", "ATYP", "INF", "ADC", "Comment"]
 
-for i in range(max_specimens):
-    columns += [f"Specimen_{i+1}", f"GS_{i+1}", f"GP_{i+1}", f"#C_{i+1}", f"%Spec_{i+1}", f"HGPIN_{i+1}", f"ASAP_{i+1}", f"ATYP_{i+1}", f"INF_{i+1}", f"ADC_{i+1}", f"Comment_{i+1}"]
-
-for report_data in extracted_data:
-    row = [report_data[0]["study_id"]]  # StudyID
-    for i in range(max_specimens):
-        if i < len(report_data):
-            specimen = report_data[i]
-            row += [
-                specimen.get("specimen_name", ""),
-                specimen.get("gleason_score", ""),
-                specimen.get("gleason_pattern", ""),
-                specimen.get("num_cores", ""),
-                specimen.get("percent_specimen", ""),
-                specimen.get("features", {}).get("HGPIN", 0),
-                specimen.get("features", {}).get("ASAP", 0),
-                specimen.get("features", {}).get("ATYP", 0),
-                specimen.get("features", {}).get("INF", 0),
-                specimen.get("features", {}).get("ADC", 0),
-                specimen.get("comment", "")
-            ]
-        else:
-            row += [""] * 11
+for specimen in extracted_data:
+    row = [
+        specimen.get("study_id", ""),
+        specimen.get("specimen_name", ""),
+        specimen.get("gleason_score", ""),
+        specimen.get("gleason_pattern", ""),
+        specimen.get("num_cores", ""),
+        specimen.get("percent_specimen", "unknown"),
+        specimen.get("features", {}).get("HGPIN", 0),
+        specimen.get("features", {}).get("ASAP", 0),
+        specimen.get("features", {}).get("ATYP", 0),
+        specimen.get("features", {}).get("INF", 0),
+        specimen.get("features", {}).get("ADC", 0),
+        specimen.get("comment", "")
+    ]
     flattened_data.append(row)
 
-df_output = pd.DataFrame(flattened_data, columns=columns)
+# Write the flattened data to a text file
+with open(output_txt_path, "w") as f:
+    f.write(",".join(columns) + "\n")
+    for row in flattened_data:
+        f.write(",".join(map(str, row)) + "\n")
 
-try:
-    df_output.to_csv(output_csv_path, index=False)
-    print(f"\n✅ Extraction complete. New CSV saved at: {output_csv_path}")
-except Exception as e:
-    print(f"Error writing to output CSV: {e}")
+print(f"\n✅ Extraction complete. Data saved in: {output_txt_path}")
